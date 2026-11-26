@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Secret Santa reveal</title>
+<style>
+:root{--forest:#102b23;--gold:#e6c987;--cream:#fff8e9;--muted:#d8d0bd;--red:#9b3d36}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;padding:24px 16px;display:grid;place-items:center;color:var(--cream);font-family:Georgia,"Times New Roman",serif;
+background:radial-gradient(circle at 15% 10%,rgba(230,201,135,.13),transparent 26%),linear-gradient(145deg,#091c17,var(--forest) 60%,#173b2e)}
+main{width:100%;max-width:440px}
+h1{margin:0 0 6px;font-weight:normal;font-size:clamp(28px,8vw,36px);line-height:1.1}
+.lead{margin:0 0 22px;color:var(--muted);line-height:1.5}
+form{padding:24px 20px;border:1px solid rgba(230,201,135,.55);border-radius:18px;background:rgba(255,255,255,.05)}
+label{display:block;margin:0 0 6px 2px;color:var(--gold);font:14px Arial,sans-serif}
+input{width:100%;margin-bottom:14px;padding:14px;border:1px solid rgba(230,201,135,.7);border-radius:10px;background:var(--cream);color:#172b22;font:bold 18px Arial,sans-serif;letter-spacing:.1em;text-align:center;text-transform:uppercase}
+button{width:100%;padding:15px;border:0;border-radius:10px;background:var(--gold);color:#1b2b21;font:bold 16px Arial,sans-serif;cursor:pointer}
+button.ghost{margin-top:12px;background:transparent;color:var(--gold);border:1px solid var(--gold)}
+input:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+#msg{min-height:20px;margin:12px 0 0;color:#ffd7c8;font:14px Arial,sans-serif}
+#res{display:none;margin-top:18px;padding:22px 16px;border-radius:10px;background:var(--cream);color:#183328;text-align:center}
+#res .s{font:13px Arial,sans-serif;color:#75684f}
+#res .n{margin:6px 0 16px;font-size:clamp(20px,6vw,26px);line-height:1.25;overflow-wrap:anywhere}
+#res .c{display:inline-block;padding:8px 16px;border:1px solid #c5a66b;color:var(--red);font:bold 24px Arial,sans-serif;letter-spacing:.1em}
+</style>
+</head>
+<body>
+<main>
+<h1>Secret Santa reveal</h1>
+<p class="lead">Enter the code you were sent to find out who you are gifting.</p>
+<form id="f" autocomplete="off">
+  <label for="code">Your code</label>
+  <input id="code" required maxlength="40" placeholder="e.g. MIST-27">
+  <button type="submit">Reveal my recipient</button>
+  <p id="msg" role="status" aria-live="polite"></p>
+  <div id="res">
+    <div class="s">Your Secret Santa recipient is</div>
+    <div class="n" id="rn"></div>
+    <div class="s">Their code</div>
+    <div class="c" id="rc"></div>
+  </div>
+  <button type="button" class="ghost" id="pdf" style="display:none">Download as PDF</button>
+</form>
+</main>
+<script src="lib.js"></script>
+<script>
+const L=SantaLib,$=id=>document.getElementById(id);let reg=null,cur=null;
+(async()=>{
+  const m=location.hash.match(/^#d=(.+)$/);
+  try{const list=await L.decodeRegistry(m[1]);reg=new Map(list.map(p=>[p.code,p.name]))}
+  catch(e){$('msg').textContent='This link is incomplete. Ask your organiser for the full reveal link.'}
+})();
+$('code').oninput=e=>{e.target.value=L.normCode(e.target.value)};
+$('f').onsubmit=ev=>{
+  ev.preventDefault();$('res').style.display='none';$('pdf').style.display='none';cur=null;
+  if(!reg){$('msg').textContent='This link is incomplete. Ask your organiser for the full reveal link.';return}
+  const code=L.normCode($('code').value),name=reg.get(code);
+  if(!name){$('msg').textContent='We could not find that code. Check the spelling and try again.';return}
+  cur={name,code};$('msg').textContent='';
+  $('rn').textContent=name;$('rc').textContent=code;$('res').style.display='block';$('pdf').style.display='block';
+};
+$('pdf').onclick=()=>{
+  if(!cur)return;const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([L.buildCardsPdf([{name:cur.name,code:cur.code,recipient:true}])],{type:'application/pdf'}));
+  a.download='SecretSanta_'+cur.code+'.pdf';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+};
+</script>
+</body>
+</html>
